@@ -1,0 +1,27 @@
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+canvas {
+  display: block;
+}
+
+#start-btn{
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  width: 100px;
+  height: 95px;
+  border: none;
+  cursor: pointer;
+  background-color: #393da6;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #fff;
+  box-shadow: 2px 3px 8px #280462;
+}
