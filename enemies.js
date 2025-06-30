@@ -1,27 +1,32 @@
-let enemyTypes = ["biker", "drone", "alien"];
+let enemyTypes = ["pflanze", "stein", "biker", "drone", "alien"];
 
 class Enemy {
   constructor(laneIndex, enemyVel) {
     this.laneIndex = laneIndex;
     let y = 100;
 
-    let x = 0; 
-    
+    let x = 0;
+
     this.pos = createVector(x, y);
     this.vel = createVector(0, enemyVel);
 
     //Type of enemy
-    this.img = random(enemiesImgs);
+    //this.img = random(enemiesImgs);
     this.type = random(enemyTypes);
-    if (this.type === "biker") this.img = enemiesImgs[0];
-    else if (this.type === "drone") this.img = enemiesImgs[1];
-    else if (this.type === "alien") this.img = enemiesImgs[2];
+    if (this.type === "pflanze") this.img = enemiesImgs[0];
+    if (this.type === "stein") this.img = enemiesImgs[1];
+    if (this.type === "biker") this.img = enemiesImgs[2];
+    else if (this.type === "drone") this.img = enemiesImgs[3];
+    else if (this.type === "alien") this.img = enemiesImgs[4];
 
     //img sizes
-    this.imgW = 225;
-    this.imgH = 225;
+    this.imgW = 250;
+    this.imgH = 250;
     this.sizeW = this.imgW;
     this.sizeH = this.imgH;
+
+    //Collision
+    this.collided = false;
   }
 
   updateSize() {
@@ -32,8 +37,8 @@ class Enemy {
   update() {
     // Zuerst die Y-Position aktualisieren
     this.pos.add(this.vel);
-    if(this.pos.y > height-200) {
-      this.pos.add(this.vel.copy().mult(2));
+    if (this.pos.y > height - 300) {
+      this.pos.add(this.vel.copy().mult(3));
     }
 
     // 1. Finde die linke und rechte Kante der Straße auf der aktuellen Y-Höhe
@@ -44,21 +49,27 @@ class Enemy {
     const currentRoadWidth = roadRightX - roadLeftX;
     const currentLaneWidth = currentRoadWidth / numLanes;
 
-    // 3. Berechne die X-Position für die Mitte der zugewiesenen Spur
-    this.pos.x = roadLeftX + (currentLaneWidth * this.laneIndex) + (currentLaneWidth / 2);
-
+    let laneCenterX = roadLeftX + currentLaneWidth * this.laneIndex + currentLaneWidth / 2;
+    if (this.laneIndex === 0) { //left lane
+      this.pos.x = laneCenterX - currentLaneWidth * 0.3;
+    } else if (this.laneIndex === numLanes - 1) { //right lane
+      this.pos.x = laneCenterX + currentLaneWidth * 0.3;
+    } else {
+      this.pos.x = laneCenterX;
+    }
     //this.pos.x += (random() - 0.5) * 2;
   }
 
   show() {
     this.updateSize();
-    image(this.img, this.pos.x - this.sizeW / 2, this.pos.y, this.sizeW, this.sizeH);
-  }
-}
-
-
-class Tree{
-  constructor() {
-
+    if (this.img) {
+      image(
+        this.img,
+        this.pos.x - this.sizeW / 2,
+        this.pos.y,
+        this.sizeW,
+        this.sizeH
+      );
+    }
   }
 }

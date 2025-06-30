@@ -1,3 +1,13 @@
+// --- Arduino-Kommunikation Variablen ---
+let port;
+let connectButton;
+let arduinoData = {
+  xValue: 512,
+  currentLane: 0,
+};
+let latestDataString = "Warte auf Daten...";
+// --- Arduino-Kommunikation Variablen ---
+
 let introBg;
 let canvasWidth;
 let canvasHeight;
@@ -7,6 +17,14 @@ let introStarted = false;
 let introHidden = false;
 
 let isPlayin = false;
+
+//DECORATION
+//Skyline
+let skyline;
+let skylineFull;
+//trees
+let treeImg;
+let trees = [];
 
 //LANES
 let numLanes = 3;
@@ -22,20 +40,38 @@ let enemiesImgPaths = [
   "/assets/elements/biker1.png",
   "/assets/elements/drone1.png",
   "/assets/elements/alien1.png",
+  "/assets/elements/stein.png",
+  "/assets/elements/pflanze.png",
 ];
 let enemiesImgs = [];
 
 const typeOrder = {
-  biker: 0,
-  drone: 1,
-  alien: 2,
+  pflanze: 0,
+  stein: 1,
+  biker: 2,
+  drone: 3,
+  alien: 4,
 };
 
+//Car Player
 let player;
+let lanePositionsX = [];
+let smoothPlayerX = 0;
+
+const GAME_VELOCITY = 25000;
+//highscore
+let highscore = 0;
+let increase_highscore = 0.1;
+
+//Lifes
+let lifesNum = 3;
 
 function preload() {
   introBg = loadImage("/assets/NightDrive.gif");
   introSound = loadSound("/assets/audio/lady-of-the-80.mp3");
+
+  skyline = loadImage("/assets/skyline.png");
+  skylineFull = loadImage("/assets/skyline-full.png");
 
   //Car Player
   player = loadImage("/assets/elements/player.png");
@@ -44,13 +80,23 @@ function preload() {
   for (let i = 0; i < enemiesImgPaths.length; i++) {
     enemiesImgs[i] = loadImage(enemiesImgPaths[i]);
   }
+
+  //Trees
+  treeImg = loadImage("/assets/elements/blossom-tree.png");
 }
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
 
+  //
+  let roadWidthAtPlayer = width - 100;
+  let laneWidth = roadWidthAtPlayer / 3;
+  lanePositionsX[0] = 50 + laneWidth / 2 - 100;
+  lanePositionsX[1] = 50 + laneWidth * 1.5 - 100;
+  lanePositionsX[2] = 50 + laneWidth * 2.5 - 100;
+
   //increase currentVelocity of enemies
-  setInterval(increaseVel, 10000);
+  setInterval(increaseVel, GAME_VELOCITY);
 
   //initialize enemies
   for (let i = 0; i < numLanes; i++) {
@@ -58,6 +104,14 @@ function setup() {
       enemies.push(new Enemy(i, enemyVelocity[i]));
     }
   }
+
+  //initialize trees
+  for (let i = 0; i < 20; i++) {
+    trees.push(new Tree(i % 2));
+  }
+  connectButton = createButton("Connect");
+  connectButton.position(width - connectButton.width / 2 - 100, height - 50);
+  connectButton.mousePressed(connectToArduino);
 }
 
 function draw() {
@@ -67,6 +121,20 @@ function draw() {
   }
 
   background("#160321");
+
+  // draw trees
+  for (let i = 0; i < trees.length; i++) {
+    trees[i].update();
+    trees[i].display();
+  }
+
+  //Sky
+  image(skyline, 0, -94, 1500, 244);
+  push();
+  scale(1, -1);
+  tint(255, 60);
+  image(skylineFull, 0, -767);
+  pop();
 
   //Street Lanes
   strokeWeight(5);
@@ -92,7 +160,10 @@ function draw() {
     let e = enemies[i];
     e.update();
     e.show();
-    if (e.pos.y > height) {
+
+    checkCollision(e);
+
+    if (e.pos.y > height || e.collided) {
       enemies.splice(i, 1);
       let randomLane = [0, 1, 2]; //floor(random(numLanes))
       if (enemies.length < MAX_CONCURRENT_ENEMIES) {
@@ -103,16 +174,36 @@ function draw() {
           )
         );
       }
-      lanePos += 1;
-      if (lanePos > 2) {
-        lanePos = 0;
-      }
+    }
+  }
+
+  //Attack
+  for (let i = attacks.length - 1; i >= 0; i--) {
+    let attack = attacks[i];
+    attack.update();
+    attack.display();
+
+    if (attack.pos.y < 0) {
+      attacks.splice(i, 1);
     }
   }
 
   //Car Player
-  let playerPos = constrain(mouseX - 75, 150, 1075);
-  image(player, playerPos, height - 160, 200, 200);
+  let targetX = lanePositionsX[arduinoData.currentLane];
+  let playerY = height - 160;
+  smoothPlayerX = lerp(smoothPlayerX, targetX, 0.1);
+  image(player, smoothPlayerX, playerY, 200, 200);
+
+  //Highscore Number, 3 Lifes Display
+  highscore += increase_highscore;
+  push();
+  textSize(20);
+  fill(255);
+  noStroke();
+  textAlign(CENTER, CENTER);
+  text("Score: " + round(highscore), width / 2, 40);
+  text("❤️ " + lifesNum, width / 2, 80);
+  pop();
 
   /********FRAMERATE********/
   let fps = frameRate();
@@ -126,12 +217,39 @@ function draw() {
 }
 
 function increaseVel() {
-  for(let v = 0; v < enemyVelocity.length; v++) {
+  for (let v = 0; v < enemyVelocity.length; v++) {
     enemyVelocity[v] = min(enemyVelocity[v] + 0.2, 10);
   }
-} 
+}
 
-function drawRoad() {}
+function checkCollision(enemy) {
+  if (enemy.collided) {
+    return;
+  }
+  let playerX = smoothPlayerX;
+  let playerY = height - 160;
+  let playerWidth = 50;
+  let playerHeight = 50;
+
+  let enemyX = enemy.pos.x - enemy.sizeW / 2;
+  let enemyY = enemy.pos.y;
+  let enemyWidth = enemy.sizeW;
+  let enemyHeight = enemy.sizeH;
+
+  if (
+    playerX < enemyX + enemyWidth &&
+    playerX + playerWidth > enemyX &&
+    playerY < enemyY + enemyHeight &&
+    playerY + playerHeight > enemyY
+  ) {
+    enemy.collided = true;
+    lifesNum -= 1;
+    if (lifesNum <= 0) {
+      console.log("GAME OVER!");
+      noLoop();
+    }
+  }
+}
 
 function mousePressed() {
   if (!introStarted) {
@@ -143,15 +261,91 @@ function mousePressed() {
   }
 }
 
+let attacks = [];
+
 function keyPressed() {
   if (keyCode === ENTER) {
+    connectButton.remove();
     introHidden = true;
     isPlayin = true;
     introSound.stop();
+  }
+  if (key === "a" || key === "A") {
+    let newAttack = new Attack(
+      smoothPlayerX + player.width / 2,
+      height - 100,
+      arduinoData.currentLane
+    );
+    attacks.push(newAttack);
   }
 }
 
 function windowResized() {
   resizeCanvas(windowWidth, 400);
   laneWidth = windowWidth / numLanes;
+}
+
+//ARDUINO FUNCTIONS WEB API
+//Source: Gemini AI
+function processData(dataString) {
+  latestDataString = "Empfangen: " + dataString;
+  let values = dataString.split(","); // "xValue,currentLane"
+
+  if (values.length === 2) {
+    //change 2 to 5
+    //VALUES coming from arduino
+    arduinoData.xValue = Number(values[0]);
+    arduinoData.currentLane = Number(values[1]);
+    /*arduinoData.arcadeBtnAttack = Number(values[2]);
+    arduinoData.arcadeBtnBoost = Number(values[3]);
+    arduinoData.ventilator = Number(values[4]);*/
+  }
+}
+
+async function connectToArduino() {
+  if (!port) {
+    try {
+      port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 9600 });
+      connectButton.html("Connected");
+      readData();
+    } catch (err) {
+      console.error("Fehler beim Verbinden: ", err);
+      connectButton.html("Verbindung fehlgeschlagen");
+    }
+  }
+}
+
+async function readData() {
+  while (port && port.readable) {
+    const reader = port.readable.getReader();
+    const textDecoder = new TextDecoder();
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        let chunk = textDecoder.decode(value, { stream: true });
+        let lines = chunk.trim().split("\n");
+        lines.forEach((line) => processData(line.trim()));
+      }
+    } catch (error) {
+      console.error("Fehler beim Lesen: ", error);
+    } finally {
+      reader.releaseLock();
+    }
+  }
+}
+
+async function sendData(data) {
+  if (port && port.writable) {
+    const writer = port.writable.getWriter();
+    const textEncoder = new TextEncoder();
+    try {
+      await writer.write(textEncoder.encode(data + "\n"));
+    } catch (error) {
+      console.error("Fehler beim Senden: ", error);
+    } finally {
+      writer.releaseLock();
+    }
+  }
 }
