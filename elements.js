@@ -1,4 +1,4 @@
-class Attack{
+class Attack {
     constructor(x, y, laneIndex) { // Füge laneIndex zum Konstruktor hinzu
         this.laneIndex = laneIndex; // Speichere den Spur-Index
         

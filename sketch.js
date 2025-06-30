@@ -1,34 +1,35 @@
-// --- Arduino-Kommunikation Variablen ---
+// --- Arduino-Kommunikation Variables ---
 let port;
 let connectButton;
 let arduinoData = {
   xValue: 512,
   currentLane: 0,
+  btnShoot: 0,
 };
-let latestDataString = "Warte auf Daten...";
-// --- Arduino-Kommunikation Variablen ---
+let lastBtnShootState = 0;
+let latestDataString = "Wait for Data...";
+// --- Arduino-Kommunikation Variables ---
 
+//Game Intro
 let introBg;
+//Canvas Dimensions
 let canvasWidth;
 let canvasHeight;
 
 let introSound;
 let introStarted = false;
 let introHidden = false;
+//let isPlayin = false;
 
-let isPlayin = false;
-
-//DECORATION
-//Skyline
-let skyline;
-let skylineFull;
-//trees
-let treeImg;
-let trees = [];
-
-//LANES
+//STREET LANES
 let numLanes = 3;
 let lanePos = 0;
+
+//CAR PLAYER
+let player;
+let lanePositionsX = [];
+let smoothPlayerX = 0;
+
 
 //ENEMIES
 let enemies = [];
@@ -53,19 +54,28 @@ const typeOrder = {
   alien: 4,
 };
 
-//Car Player
-let player;
-let lanePositionsX = [];
-let smoothPlayerX = 0;
+//ATTACKS
+let attacks = [];
 
+//DECORATION / BACKGORUND ELEMENTS
+//Skyline
+let skyline;
+let skylineFull;
+//Trees
+let treeImg;
+let trees = [];
+
+
+
+//GAME VALUES
 const GAME_VELOCITY = 25000;
 //highscore
 let highscore = 0;
 let increase_highscore = 0.1;
-
 //Lifes
 let lifesNum = 3;
 
+//PRELOAD SOUND & IMAGES
 function preload() {
   introBg = loadImage("/assets/NightDrive.gif");
   introSound = loadSound("/assets/audio/lady-of-the-80.mp3");
@@ -88,47 +98,50 @@ function preload() {
 function setup() {
   createCanvas(windowWidth, windowHeight);
 
-  //
+  // STREET LANES CALCULATION
   let roadWidthAtPlayer = width - 100;
   let laneWidth = roadWidthAtPlayer / 3;
   lanePositionsX[0] = 50 + laneWidth / 2 - 100;
   lanePositionsX[1] = 50 + laneWidth * 1.5 - 100;
   lanePositionsX[2] = 50 + laneWidth * 2.5 - 100;
 
-  //increase currentVelocity of enemies
+  //INCREASE GAME VELOCITY
   setInterval(increaseVel, GAME_VELOCITY);
 
-  //initialize enemies
+  //INITIALIZE ENEMIES
   for (let i = 0; i < numLanes; i++) {
     if (enemies.length < MAX_CONCURRENT_ENEMIES) {
       enemies.push(new Enemy(i, enemyVelocity[i]));
     }
   }
 
-  //initialize trees
+  //INITIALIZE TREES
   for (let i = 0; i < 20; i++) {
     trees.push(new Tree(i % 2));
   }
+
+  //CONNECT ARDUINO WITH P5 SKETCH
   connectButton = createButton("Connect");
   connectButton.position(width - connectButton.width / 2 - 100, height - 50);
   connectButton.mousePressed(connectToArduino);
 }
 
 function draw() {
+  //INTRO VIEW
   if (!introHidden) {
     background(introBg);
     return;
   }
-
+  //BACKGROUND COLOR
   background("#160321");
 
-  // draw trees
+  // DRAW & UPDATE TREES
   for (let i = 0; i < trees.length; i++) {
     trees[i].update();
     trees[i].display();
   }
 
-  //Sky
+  //ADD SKY IMAGE + REFLECTION
   image(skyline, 0, -94, 1500, 244);
   push();
   scale(1, -1);
@@ -136,13 +149,13 @@ function draw() {
   image(skylineFull, 0, -767);
   pop();
 
-  //Street Lanes
+  //ADD STREET LANES
+  //Outer Lanes
   strokeWeight(5);
   stroke(255, 0, 150, 200);
   line(width / 2 - 50, 150, 50, height);
   line(width / 2 + 50, 150, width - 50, height);
-
-  // Inner Street Lanes
+  // Inner Lanes
   strokeWeight(2);
   stroke(255, 255, 0, 150);
   let x1_top = width / 2 - 50 + 100 / 3;
@@ -152,17 +165,19 @@ function draw() {
   let x2_bottom = 50 + ((width - 100) / 3) * 2;
   line(x2_top, 150, x2_bottom, height);
 
-  //Enemies
+  //START: ENEMIES
   enemies.sort((a, b) => a.pos.y - b.pos.y);
 
-  //draw enemies and add new when gone
+  //Draw enemies and add new when gone
   for (let i = enemies.length - 1; i >= 0; i--) {
     let e = enemies[i];
     e.update();
     e.show();
 
+    //Check collision between player and enemy
     checkCollision(e);
 
+    //remove gone enemies and add new ones
     if (e.pos.y > height || e.collided) {
       enemies.splice(i, 1);
       let randomLane = [0, 1, 2]; //floor(random(numLanes))
@@ -176,25 +191,38 @@ function draw() {
       }
     }
   }
+  //END: ENEMIES
 
-  //Attack
+  //START: CAR PLAYER
+  let targetX = lanePositionsX[arduinoData.currentLane];
+  let playerY = height - 160;
+  smoothPlayerX = lerp(smoothPlayerX, targetX, 0.1); //smooth lane switch
+  image(player, smoothPlayerX, playerY, 200, 200);
+  //END: CAR PLAYER
+
+  //START: ATTACKS
+  //attack on button clcik
+  if (arduinoData.btnShoot == 1 && lastBtnShootState == 0) {
+    let newAttack = new Attack(
+      smoothPlayerX + player.width / 2,
+      height - 100,
+      arduinoData.currentLane
+    );
+    attacks.push(newAttack);
+  }
+  lastBtnShootState = arduinoData.btnShoot;
+
   for (let i = attacks.length - 1; i >= 0; i--) {
     let attack = attacks[i];
     attack.update();
     attack.display();
-
     if (attack.pos.y < 0) {
       attacks.splice(i, 1);
     }
   }
+  //END: ATTACKS
 
-  //Car Player
-  let targetX = lanePositionsX[arduinoData.currentLane];
-  let playerY = height - 160;
-  smoothPlayerX = lerp(smoothPlayerX, targetX, 0.1);
-  image(player, smoothPlayerX, playerY, 200, 200);
-
-  //Highscore Number, 3 Lifes Display
+  //START: HIGHSCORE NUMBER + 3 LIFES DISPLAY
   highscore += increase_highscore;
   push();
   textSize(20);
@@ -204,6 +232,7 @@ function draw() {
   text("Score: " + round(highscore), width / 2, 40);
   text("❤️ " + lifesNum, width / 2, 80);
   pop();
+  //END: HIGHSCORE NUMBER + 3 LIFES DISPLAY
 
   /********FRAMERATE********/
   let fps = frameRate();
@@ -216,12 +245,14 @@ function draw() {
   /********FRAMERATE********/
 }
 
+//FUNC INCREASE ENEMIES VELOCITY
 function increaseVel() {
   for (let v = 0; v < enemyVelocity.length; v++) {
     enemyVelocity[v] = min(enemyVelocity[v] + 0.2, 10);
   }
 }
 
+//FUNC CHECK FOR ENEMY COLLISIONS
 function checkCollision(enemy) {
   if (enemy.collided) {
     return;
@@ -243,6 +274,7 @@ function checkCollision(enemy) {
     playerY + playerHeight > enemyY
   ) {
     enemy.collided = true;
+    //smoothPlayerX += 200;
     lifesNum -= 1;
     if (lifesNum <= 0) {
       console.log("GAME OVER!");
@@ -261,23 +293,22 @@ function mousePressed() {
   }
 }
 
-let attacks = [];
-
 function keyPressed() {
   if (keyCode === ENTER) {
     connectButton.remove();
     introHidden = true;
-    isPlayin = true;
+    //isPlayin = true;
     introSound.stop();
   }
-  if (key === "a" || key === "A") {
+  //Attack
+  /*if (key === "a" || key === "A") {
     let newAttack = new Attack(
       smoothPlayerX + player.width / 2,
       height - 100,
       arduinoData.currentLane
     );
     attacks.push(newAttack);
-  }
+  }*/
 }
 
 function windowResized() {
@@ -286,18 +317,18 @@ function windowResized() {
 }
 
 //ARDUINO FUNCTIONS WEB API
-//Source: Gemini AI
+//Source: Gemini AI + Arduino
 function processData(dataString) {
   latestDataString = "Empfangen: " + dataString;
-  let values = dataString.split(","); // "xValue,currentLane"
+  let values = dataString.split(","); // "xValue,currentLane,btnShoot, btnBoost,ventilator"
 
   if (values.length === 2) {
     //change 2 to 5
     //VALUES coming from arduino
     arduinoData.xValue = Number(values[0]);
     arduinoData.currentLane = Number(values[1]);
-    /*arduinoData.arcadeBtnAttack = Number(values[2]);
-    arduinoData.arcadeBtnBoost = Number(values[3]);
+    arduinoData.btnShoot = Number(values[2]);
+    /*arduinoData.btnBoost = Number(values[3]);
     arduinoData.ventilator = Number(values[4]);*/
   }
 }

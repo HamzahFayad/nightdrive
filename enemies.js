@@ -4,14 +4,12 @@ class Enemy {
   constructor(laneIndex, enemyVel) {
     this.laneIndex = laneIndex;
     let y = 100;
-
     let x = 0;
 
     this.pos = createVector(x, y);
     this.vel = createVector(0, enemyVel);
 
     //Type of enemy
-    //this.img = random(enemiesImgs);
     this.type = random(enemyTypes);
     if (this.type === "pflanze") this.img = enemiesImgs[0];
     if (this.type === "stein") this.img = enemiesImgs[1];
