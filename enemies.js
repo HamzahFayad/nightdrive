@@ -25,6 +25,8 @@ class Enemy {
 
     //Collision
     this.collided = false;
+    //Attacked
+    this.attacked = false;
   }
 
   updateSize() {
@@ -47,10 +49,13 @@ class Enemy {
     const currentRoadWidth = roadRightX - roadLeftX;
     const currentLaneWidth = currentRoadWidth / numLanes;
 
-    let laneCenterX = roadLeftX + currentLaneWidth * this.laneIndex + currentLaneWidth / 2;
-    if (this.laneIndex === 0) { //left lane
+    let laneCenterX =
+      roadLeftX + currentLaneWidth * this.laneIndex + currentLaneWidth / 2;
+    if (this.laneIndex === 0) {
+      //left lane
       this.pos.x = laneCenterX - currentLaneWidth * 0.3;
-    } else if (this.laneIndex === numLanes - 1) { //right lane
+    } else if (this.laneIndex === numLanes - 1) {
+      //right lane
       this.pos.x = laneCenterX + currentLaneWidth * 0.3;
     } else {
       this.pos.x = laneCenterX;
