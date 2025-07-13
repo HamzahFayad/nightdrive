@@ -27,15 +27,18 @@ class Attack {
         this.pos.x = laneCenterX;
 
 
-        this.size = map(this.pos.y, this.initialY, 0, 10, 2); // Startgröße 10, schrumpft auf 2
-        this.size = constrain(this.size, 2, 10); // Sicherstellen, dass die Größe innerhalb vernünftiger Grenzen bleibt
+        this.size = map(this.pos.y, this.initialY, 0, 80, 0); 
+        this.size = constrain(this.size, 2, 80); 
     }
 
     display() {
         ellipseMode(CENTER);
-        fill("red");
-        // Nutze die dynamische Größe für den Kreis
-        ellipse(this.pos.x, this.pos.y, this.size, this.size);
+        push();
+        imageMode(CENTER);
+        //fill("red");
+        //ellipse(this.pos.x, this.pos.y, this.size, this.size);
+        image(fireAttack, this.pos.x, this.pos.y, this.size, this.size);
+        pop();
     }
 }
 
@@ -43,9 +46,8 @@ class Attack {
 
 class Tree {
     constructor(side) {
-        // 'side' bestimmt, ob der Baum links oder rechts erscheint (0 für links, 1 für rechts)
         this.side = side;
-        this.reset(); // Setzt die Anfangsposition und Größe
+        this.reset();
     }
 
     reset() {

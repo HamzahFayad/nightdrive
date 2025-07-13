@@ -38,6 +38,7 @@ let player;
 let playerBoost;
 let lanePositionsX = [];
 let smoothPlayerX = 0;
+let heart;
 
 //ENEMIES
 let enemies = [];
@@ -66,6 +67,7 @@ const typeOrder = {
 //ATTACKS
 let attacks = [];
 let numAttacks = 0;
+let fireAttack;
 
 //BOOST
 let boostActive = false;
@@ -84,11 +86,18 @@ let tokyo;
 
 //GAME VALUES
 let game_velocity_timer = 25000;
+let velocityStarted = false;
+
 //highscore
 let highscore = 0;
 let increase_highscore = 0.1;
 //Lifes
 let lifesNum = 3;
+
+//Sounds + Music
+let gameMusic;
+let carCrashSound;
+let laserGunSound;
 
 //PRELOAD SOUND & IMAGES
 function preload() {
@@ -96,6 +105,7 @@ function preload() {
   gameFont = loadFont("/assets/gamefont.otf");
   //sound
   introSound = loadSound("/assets/audio/lady-of-the-80.mp3");
+  gameMusic = loadSound("/assets/audio/neon-gaming.mp3");
   carCrashSound = loadSound("/assets/audio/car-crash.mp3");
   laserGunSound = loadSound("/assets/audio/laser-gun.mp3");
   //images
@@ -105,6 +115,8 @@ function preload() {
   tokyo = loadImage("/assets/tokyo.png");
   player = loadImage("/assets/elements/player.png");
   playerBoost = loadImage("/assets/elements/player-boost.png");
+  fireAttack = loadImage("/assets/elements/fireball.gif");
+  heart = loadImage("/assets/elements/heart.png");
   treeImg = loadImage("/assets/elements/blossom-tree.png");
   for (let i = 0; i < enemiesImgPaths.length; i++) {
     enemiesImgs[i] = loadImage(enemiesImgPaths[i]);
@@ -126,7 +138,7 @@ function setup() {
   smoothPlayerX = lanePositionsX[arduinoData.currentLane];
 
   //INCREASE GAME VELOCITY
-  setInterval(increaseVel, game_velocity_timer);
+  //setInterval(increaseVel, game_velocity_timer);
 
   //INITIALIZE ENEMIES
   for (let i = 0; i < numLanes; i++) {
@@ -155,6 +167,12 @@ function draw() {
   if (!introHidden) {
     background(introBg || 50);
     return;
+  }
+
+  //INCREASE GAME ENEMIES VELOCITY
+  if (!velocityStarted) {
+    setInterval(increaseVel, game_velocity_timer);
+    velocityStarted = true;
   }
 
   background("#160321");
@@ -270,8 +288,16 @@ function draw() {
   noStroke();
   textAlign(CENTER, CENTER);
   text("Score: " + round(highscore) + "x" + enemyVelocity[0], width / 2, 40);
-  text("❤️ " + lifesNum, width / 2, 80);
-  text("💥 " + numAttacks + boostActive, width - 100, 40);
+  push();
+  imageMode(CENTER);
+  image(heart, width / 2 - 10, 82, 28, 25);
+  pop();
+  text(lifesNum, width / 2 + 15, 80);
+  push();
+  imageMode(CENTER);
+  image(fireAttack, width - 130, 42, 40, 40);
+  pop();
+  text(numAttacks + boostActive, width - 100, 40);
   pop();
   //END: HIGHSCORE NUMBER + 3 LIFES DISPLAY
 
@@ -369,6 +395,8 @@ function handleJoystickStart() {
     if (connectControllerButton) connectControllerButton.remove();
     if (connectActuatorButton) connectActuatorButton.remove();
     introHidden = true;
+    //GAME MUSIC
+    gameMusic.loop();
     //if (introSound && introSound.isLoaded()) introSound.stop();
   }
 }
@@ -387,6 +415,8 @@ function keyPressed() {
     introHidden = true;
     //isPlayin = true;
     if (introSound && introSound.isLoaded()) introSound.stop();
+    //GAME MUSIC
+    gameMusic.loop();
   }
   //Testing Attack
   if ((key === "b" || key === "B") && !boostActive) {
