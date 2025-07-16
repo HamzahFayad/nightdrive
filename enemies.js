@@ -1,7 +1,7 @@
 let enemyTypes = ["pflanze", "stein", "biker", "drone", "alien"];
 
 class Enemy {
-  constructor(laneIndex, enemyVel) {
+  constructor(laneIndex, enemyVel, typeLane="normal") {
     this.laneIndex = laneIndex;
     let y = 100;
     let x = 0;
@@ -27,6 +27,19 @@ class Enemy {
     this.collided = false;
     //Attacked
     this.attacked = false;
+
+    if(typeLane=="switcher") {
+      if(laneIndex == 2 && this.pos.y < 200) {
+        setTimeout(() => this.laneIndex-=1, 1000);
+      }
+      else if(laneIndex == 1 && this.pos.y < 200) {
+        let dir = random([ -1, +1 ]);
+        setTimeout(() => this.laneIndex+=dir, 1000);
+      }
+      else if(laneIndex == 0 && this.pos.y < 200){
+        setTimeout(() => this.laneIndex+=1, 1000);
+      }
+    }
   }
 
   updateSize() {

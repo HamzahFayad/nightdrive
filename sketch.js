@@ -20,6 +20,10 @@ let introBg;
 let canvasWidth;
 let canvasHeight;
 
+let gameStarted = false;
+let countdownStarted = false;
+let gameStartTime;
+
 //FONT
 let gameFont;
 
@@ -55,6 +59,7 @@ let enemiesImgPaths = [
   "/assets/elements/pflanze.png",
 ];
 let enemiesImgs = [];
+let enemyLane = "normal";
 
 const typeOrder = {
   pflanze: 0,
@@ -98,6 +103,7 @@ let lifesNum = 3;
 let gameMusic;
 let carCrashSound;
 let laserGunSound;
+let gameOver;
 
 //PRELOAD SOUND & IMAGES
 function preload() {
@@ -108,13 +114,14 @@ function preload() {
   gameMusic = loadSound("/assets/audio/neon-gaming.mp3");
   carCrashSound = loadSound("/assets/audio/car-crash.mp3");
   laserGunSound = loadSound("/assets/audio/laser-gun.mp3");
+  gameOver = loadSound("/assets/audio/game-over.mp3");
   //images
-  introBg = loadImage("/assets/NightDrive.gif");
+  introBg = loadImage("/assets/NightDrive2.gif");
   skyline = loadImage("/assets/skyline.png");
   skylineFull = loadImage("/assets/skyline-full.png");
   tokyo = loadImage("/assets/tokyo.png");
   player = loadImage("/assets/elements/player.png");
-  playerBoost = loadImage("/assets/elements/player-boost.png");
+  playerBoost = loadImage("/assets/elements/player-boost.gif");
   fireAttack = loadImage("/assets/elements/fireball.gif");
   heart = loadImage("/assets/elements/heart.png");
   treeImg = loadImage("/assets/elements/blossom-tree.png");
@@ -125,6 +132,8 @@ function preload() {
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
+
+  gameStartTime = millis();
 
   //FONT:
   textFont(gameFont);
@@ -167,6 +176,25 @@ function draw() {
   if (!introHidden) {
     background(introBg || 50);
     return;
+  }
+
+  //Game Start Intro
+  if (!countdownStarted) {
+    countdownStarted = true;
+    gameStartTime = millis();
+  }
+  let countdown = 3000 - (millis() - gameStartTime);
+  if (!gameStarted) {
+    if (countdown > 0) {
+      background(0);
+      fill(255);
+      textAlign(CENTER, CENTER);
+      textSize(32);
+      text("Game Start in " + ceil(countdown / 1000) + " . . .", width / 2, height / 2);
+      return;
+    } else {
+      gameStarted = true;
+    }
   }
 
   //INCREASE GAME ENEMIES VELOCITY
@@ -219,7 +247,7 @@ function draw() {
       enemies.splice(i, 1);
       if (enemies.length < MAX_CONCURRENT_ENEMIES) {
         enemies.push(
-          new Enemy(Math.floor(Math.random() * numLanes), random(enemyVelocity))
+          new Enemy(Math.floor(Math.random() * numLanes), random(enemyVelocity), enemyLane)
         );
       }
     }
@@ -231,7 +259,7 @@ function draw() {
   let playerY = height - 160;
   smoothPlayerX = lerp(smoothPlayerX, targetX, 0.1); //smooth lane switch
   if (boostActive) {
-    image(playerBoost, smoothPlayerX, playerY, 200, 200);
+    image(playerBoost, smoothPlayerX, playerY - 25, 225, 225);
   } else {
     image(player, smoothPlayerX, playerY, 200, 200);
   }
@@ -287,18 +315,26 @@ function draw() {
   fill(255);
   noStroke();
   textAlign(CENTER, CENTER);
-  text("Score: " + round(highscore) + "x" + enemyVelocity[0], width / 2, 40);
+  text("Score: " + round(highscore), width / 2, 40);
+  pop();
   push();
   imageMode(CENTER);
   image(heart, width / 2 - 10, 82, 28, 25);
   pop();
+  noStroke();
   text(lifesNum, width / 2 + 15, 80);
   push();
   imageMode(CENTER);
   image(fireAttack, width - 130, 42, 40, 40);
   pop();
-  text(numAttacks + boostActive, width - 100, 40);
-  pop();
+  text(numAttacks, width - 100, 40);
+
+  if(numAttacks > 0 && isBoostReady) {
+    push();
+    fill("yellow");
+    text("BOOST", width - 200, 40);
+    pop();
+  } 
   //END: HIGHSCORE NUMBER + 3 LIFES DISPLAY
 
   /********FRAMERATE********/
@@ -311,7 +347,7 @@ function draw() {
   text(fps.toFixed(2), 10, height - 10);
   /********FRAMERATE********/
 
-  // NEU: Arduino-Kommunikation am Ende des draw-Loops aufrufen
+  //Arduino-Kommunikation
   handleArduinoCommunication();
 }
 
@@ -344,9 +380,17 @@ function checkCollision(enemy) {
     console.log("collision");
     carCrashSound.play();
     lifesNum -= 1;
-    if (lifesNum <= 0) {
-      console.log("GAME OVER!");
-      //noLoop();
+    if (lifesNum === 0) {
+      //console.log("GAME OVER!");
+      gameOver.play();
+      push();
+      noFill();
+      textSize(44);
+      text("GAME OVER", width/2, height/2-100);
+      text("Your Score: " + Math.round(highscore), width/2, height/2);
+      text("Total Hits: " + numAttacks, width/2, height/2 + 100);
+      pop();
+      noLoop();
     }
   }
 }
@@ -374,6 +418,18 @@ function checkAttackCollision(enemy) {
       if (numAttacks > 0 && numAttacks % ATTACKS_FOR_BOOST === 0) {
         isBoostReady = true;
       }
+      if(numAttacks > 20) {
+        enemyLane = random() < 0.3 ? "switcher" : "normal";
+      }
+      else if(numAttacks > 50) {
+        enemyLane = random() < 0.5 ? "switcher" : "normal";
+      }
+      else if(numAttacks > 100) {
+        enemyLane = random() < 0.8 ? "switcher" : "normal";
+      }
+      else {
+        enemyLane = "normal";
+      }
       break;
     }
   }
@@ -384,7 +440,7 @@ function mousePressed() {
     if (getAudioContext().state !== "running") {
       getAudioContext().resume();
     }
-    if (introSound && introSound.isLoaded()) introSound.loop();
+    //if (introSound && introSound.isLoaded()) introSound.loop();
     introStarted = true;
   }
 }
@@ -408,13 +464,13 @@ function keyPressed() {
   } else if (key === "a") {
     sendDataToActuator("W");
   }
-  if (keyCode === ENTER) {
+  if (keyCode === ENTER && !introHidden) {
     // remove connect btns
     if (connectControllerButton) connectControllerButton.remove();
     if (connectActuatorButton) connectActuatorButton.remove();
     introHidden = true;
     //isPlayin = true;
-    if (introSound && introSound.isLoaded()) introSound.stop();
+    //if (introSound && introSound.isLoaded()) introSound.stop();
     //GAME MUSIC
     gameMusic.loop();
   }
@@ -427,6 +483,10 @@ function keyPressed() {
     );
     attacks.push(newAttack);
     laserGunSound.play();
+    //reload
+    if(lifesNum === 0) {
+      window.location.reload();
+    }
   }
   //Testing Boost
   if ((key === "ü" || key === "Ü") && isBoostReady && !boostActive) {
