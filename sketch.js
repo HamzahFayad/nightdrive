@@ -16,6 +16,7 @@ let latestDataString = "Wait for Data...";
 
 //Game Intro
 let introBg;
+let gameIntroSk;
 //Canvas Dimensions
 let canvasWidth;
 let canvasHeight;
@@ -117,6 +118,7 @@ function preload() {
   gameOver = loadSound("/assets/audio/game-over.mp3");
   //images
   introBg = loadImage("/assets/NightDrive2.gif");
+  gameIntroSk = loadImage("/assets/gameIntro.gif");
   skyline = loadImage("/assets/skyline.png");
   skylineFull = loadImage("/assets/skyline-full.png");
   tokyo = loadImage("/assets/tokyo.png");
@@ -133,7 +135,7 @@ function preload() {
 function setup() {
   createCanvas(windowWidth, windowHeight);
 
-  gameStartTime = millis();
+  //  gameStartTime = millis();
 
   //FONT:
   textFont(gameFont);
@@ -177,6 +179,7 @@ function draw() {
     background(introBg || 50);
     return;
   }
+  background("#160321");
 
   //Game Start Intro
   if (!countdownStarted) {
@@ -186,11 +189,15 @@ function draw() {
   let countdown = 3000 - (millis() - gameStartTime);
   if (!gameStarted) {
     if (countdown > 0) {
-      background(0);
+      background(gameIntroSk);
       fill(255);
       textAlign(CENTER, CENTER);
-      textSize(32);
-      text("Game Start in " + ceil(countdown / 1000) + " . . .", width / 2, height / 2);
+      textSize(44);
+      text(
+        "Game Start in " + ceil(countdown / 1000) + " . . .",
+        width / 2,
+        height / 2
+      );
       return;
     } else {
       gameStarted = true;
@@ -202,8 +209,6 @@ function draw() {
     setInterval(increaseVel, game_velocity_timer);
     velocityStarted = true;
   }
-
-  background("#160321");
 
   //DRAW TREES
   for (let i = 0; i < trees.length; i++) {
@@ -247,7 +252,11 @@ function draw() {
       enemies.splice(i, 1);
       if (enemies.length < MAX_CONCURRENT_ENEMIES) {
         enemies.push(
-          new Enemy(Math.floor(Math.random() * numLanes), random(enemyVelocity), enemyLane)
+          new Enemy(
+            Math.floor(Math.random() * numLanes),
+            random(enemyVelocity),
+            enemyLane
+          )
         );
       }
     }
@@ -329,12 +338,12 @@ function draw() {
   pop();
   text(numAttacks, width - 100, 40);
 
-  if(numAttacks > 0 && isBoostReady) {
+  if (numAttacks > 0 && isBoostReady) {
     push();
     fill("yellow");
     text("BOOST", width - 200, 40);
     pop();
-  } 
+  }
   //END: HIGHSCORE NUMBER + 3 LIFES DISPLAY
 
   /********FRAMERATE********/
@@ -376,9 +385,9 @@ function checkCollision(enemy) {
     playerY + playerHeight > enemyY &&
     !boostActive
   ) {
-    enemy.collided = true;
-    console.log("collision");
+    enemy.collided = true; //collision occured
     carCrashSound.play();
+    smoothPlayerX *= 0.5;
     lifesNum -= 1;
     if (lifesNum === 0) {
       //console.log("GAME OVER!");
@@ -386,9 +395,9 @@ function checkCollision(enemy) {
       push();
       noFill();
       textSize(44);
-      text("GAME OVER", width/2, height/2-100);
-      text("Your Score: " + Math.round(highscore), width/2, height/2);
-      text("Total Hits: " + numAttacks, width/2, height/2 + 100);
+      text("GAME OVER", width / 2, height / 2 - 100);
+      text("Score: " + Math.round(highscore), width / 2, height / 2);
+      text("Total Hits: " + numAttacks, width / 2, height / 2 + 100);
       pop();
       noLoop();
     }
@@ -418,16 +427,13 @@ function checkAttackCollision(enemy) {
       if (numAttacks > 0 && numAttacks % ATTACKS_FOR_BOOST === 0) {
         isBoostReady = true;
       }
-      if(numAttacks > 20) {
+      if (numAttacks > 20) {
         enemyLane = random() < 0.3 ? "switcher" : "normal";
-      }
-      else if(numAttacks > 50) {
+      } else if (numAttacks > 50) {
         enemyLane = random() < 0.5 ? "switcher" : "normal";
-      }
-      else if(numAttacks > 100) {
+      } else if (numAttacks > 100) {
         enemyLane = random() < 0.8 ? "switcher" : "normal";
-      }
-      else {
+      } else {
         enemyLane = "normal";
       }
       break;
@@ -484,7 +490,7 @@ function keyPressed() {
     attacks.push(newAttack);
     laserGunSound.play();
     //reload
-    if(lifesNum === 0) {
+    if (lifesNum === 0) {
       window.location.reload();
     }
   }
@@ -493,7 +499,7 @@ function keyPressed() {
     isBoostReady = false;
     boostActive = true;
     //increase highscore
-    //increase_highscore+= 0.1 * 2;
+    increase_highscore = 0.2;
     //Play Boost Sound
     enemiesVelSnapshot = [...enemyVelocity];
     for (let v = 0; v < enemyVelocity.length; v++) {
@@ -502,11 +508,12 @@ function keyPressed() {
     // sendDataToActuator("Q"); //start ventilator
     setTimeout(() => {
       boostActive = false;
+      increase_highscore = 0.1;
       for (let v = 0; v < enemyVelocity.length; v++) {
         enemyVelocity[v] = enemiesVelSnapshot[v];
       }
       // sendDataToActuator("W"); //stop ventilator
-    }, 10000);
+    }, 10000); //BOOST for 10 seconds
   }
 }
 
