@@ -53,11 +53,11 @@ let currentVel = 4;
 const MAX_CONCURRENT_ENEMIES = numLanes - 1;
 
 let enemiesImgPaths = [
-  "/assets/elements/biker1.png",
-  "/assets/elements/drone1.png",
-  "/assets/elements/alien1.png",
-  "/assets/elements/stein.png",
-  "/assets/elements/pflanze.png",
+  "assets/elements/biker1.png",
+  "assets/elements/drone1.png",
+  "assets/elements/alien1.png",
+  "assets/elements/stein.png",
+  "assets/elements/pflanze.png",
 ];
 let enemiesImgs = [];
 let enemyLane = "normal";
@@ -109,24 +109,24 @@ let gameOver;
 //PRELOAD SOUND & IMAGES
 function preload() {
   //font
-  gameFont = loadFont("/assets/gamefont.otf");
+  gameFont = loadFont("assets/gamefont.otf");
   //sound
-  introSound = loadSound("/assets/audio/lady-of-the-80.mp3");
-  gameMusic = loadSound("/assets/audio/neon-gaming.mp3");
-  carCrashSound = loadSound("/assets/audio/car-crash.mp3");
-  laserGunSound = loadSound("/assets/audio/laser-gun.mp3");
-  gameOver = loadSound("/assets/audio/game-over.mp3");
+  introSound = loadSound("assets/audio/lady-of-the-80.mp3");
+  gameMusic = loadSound("assets/audio/neon-gaming.mp3");
+  carCrashSound = loadSound("assets/audio/car-crash.mp3");
+  laserGunSound = loadSound("assets/audio/laser-gun.mp3");
+  gameOver = loadSound("assets/audio/game-over.mp3");
   //images
-  introBg = loadImage("/assets/NightDrive2.gif");
-  gameIntroSk = loadImage("/assets/gameIntro.gif");
-  skyline = loadImage("/assets/skyline.png");
-  skylineFull = loadImage("/assets/skyline-full.png");
-  tokyo = loadImage("/assets/tokyo.png");
-  player = loadImage("/assets/elements/player.png");
-  playerBoost = loadImage("/assets/elements/player-boost.gif");
-  fireAttack = loadImage("/assets/elements/fireball.gif");
-  heart = loadImage("/assets/elements/heart.png");
-  treeImg = loadImage("/assets/elements/blossom-tree.png");
+  introBg = loadImage("assets/NightDrive2.gif");
+  gameIntroSk = loadImage("assets/gameIntro.gif");
+  skyline = loadImage("assets/skyline.png");
+  skylineFull = loadImage("assets/skyline-full.png");
+  tokyo = loadImage("assets/tokyo.png");
+  player = loadImage("assets/elements/player.png");
+  playerBoost = loadImage("assets/elements/player-boost.gif");
+  fireAttack = loadImage("assets/elements/fireball.gif");
+  heart = loadImage("assets/elements/heart.png");
+  treeImg = loadImage("assets/elements/blossom-tree.png");
   for (let i = 0; i < enemiesImgPaths.length; i++) {
     enemiesImgs[i] = loadImage(enemiesImgPaths[i]);
   }
@@ -298,18 +298,33 @@ function draw() {
   //END: ATTACKS
 
   //START: VENTILATOR BOOST
-  // if (isBoostReady && !boostActive && arduinoData.btnBoost == 0 && lastBtnBoostState == 1) {
-
-  //   isBoostReady = false;
-  //   boostActive = true;
-  //   sendDataToActuator("Q");
-  //   // Timer
-  //   setTimeout(() => {
-  //     boostActive = false;
-  //     sendDataToActuator("W");
-  //   }, 10000);
-  // }
-  // lastBtnBoostState = arduinoData.btnBoost;
+  if (
+    isBoostReady &&
+    !boostActive &&
+    arduinoData.btnBoost == 0 &&
+    lastBtnBoostState == 1
+  ) {
+    isBoostReady = false;
+    boostActive = true;
+    //increase highscore
+    increase_highscore = 0.2;
+    //Play Boost Sound
+    enemiesVelSnapshot = [...enemyVelocity];
+    for (let v = 0; v < enemyVelocity.length; v++) {
+      enemyVelocity[v] = enemyVelocity[v] + 40;
+    }
+    sendDataToActuator("Q");
+    // Timer
+    setTimeout(() => {
+      boostActive = false;
+      increase_highscore = 0.1;
+      for (let v = 0; v < enemyVelocity.length; v++) {
+        enemyVelocity[v] = enemiesVelSnapshot[v];
+      }
+      sendDataToActuator("W");
+    }, 10000);
+  }
+  lastBtnBoostState = arduinoData.btnBoost;
   //END: VENTILATOR BOOST
 
   //SKYLINE IMG
@@ -453,7 +468,7 @@ function mousePressed() {
 
 //START GAME
 function handleJoystickStart() {
-  if (arduinoData.btnStick === 0) {
+  if (arduinoData.btnStick === 0 && !introHidden) {
     if (connectControllerButton) connectControllerButton.remove();
     if (connectActuatorButton) connectActuatorButton.remove();
     introHidden = true;
@@ -478,7 +493,7 @@ function keyPressed() {
     //isPlayin = true;
     //if (introSound && introSound.isLoaded()) introSound.stop();
     //GAME MUSIC
-    gameMusic.loop();
+    //gameMusic.loop();
   }
   //Testing Attack
   if ((key === "b" || key === "B") && !boostActive) {
@@ -505,14 +520,14 @@ function keyPressed() {
     for (let v = 0; v < enemyVelocity.length; v++) {
       enemyVelocity[v] = enemyVelocity[v] + 40;
     }
-    // sendDataToActuator("Q"); //start ventilator
+    sendDataToActuator("Q"); //start ventilator
     setTimeout(() => {
       boostActive = false;
       increase_highscore = 0.1;
       for (let v = 0; v < enemyVelocity.length; v++) {
         enemyVelocity[v] = enemiesVelSnapshot[v];
       }
-      // sendDataToActuator("W"); //stop ventilator
+      sendDataToActuator("W"); //stop ventilator
     }, 10000); //BOOST for 10 seconds
   }
 }
