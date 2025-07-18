@@ -117,7 +117,7 @@ function preload() {
   laserGunSound = loadSound("assets/audio/laser-gun.mp3");
   gameOver = loadSound("assets/audio/game-over.mp3");
   //images
-  introBg = loadImage("assets/NightDrive2.gif");
+  introBg = loadImage("assets/NightDrive01.gif");
   gameIntroSk = loadImage("assets/gameIntro.gif");
   skyline = loadImage("assets/skyline.png");
   skylineFull = loadImage("assets/skyline-full.png");
@@ -165,11 +165,11 @@ function setup() {
 
   //CONNECT ARDUINO WITH P5 SKETCH
   connectControllerButton = createButton("Connect Controller");
-  connectControllerButton.position(10, 10);
+  connectControllerButton.position(10, height - 50);
   connectControllerButton.mousePressed(() => connectToPort("controller"));
 
   connectActuatorButton = createButton("Connect Actuators");
-  connectActuatorButton.position(10, 50);
+  connectActuatorButton.position(10, height - 100);
   connectActuatorButton.mousePressed(() => connectToPort("actuator"));
 }
 

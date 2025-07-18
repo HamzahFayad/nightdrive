@@ -40,3 +40,11 @@ canvas {
   list-style: none;
   padding: 0;
 }
+
+button {
+  border: none;
+  background-color: #fff;
+  color: #160321;
+  padding: .4rem;
+  font-weight: 700;
+}
