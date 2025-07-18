@@ -117,7 +117,7 @@ function preload() {
   laserGunSound = loadSound("assets/audio/laser-gun.mp3");
   gameOver = loadSound("assets/audio/game-over.mp3");
   //images
-  introBg = loadImage("assets/NightDrive01.gif");
+  introBg = loadImage("assets/NightDrift01.gif");
   gameIntroSk = loadImage("assets/gameIntro.gif");
   skyline = loadImage("assets/skyline.png");
   skylineFull = loadImage("assets/skyline-full.png");
