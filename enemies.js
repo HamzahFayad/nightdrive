@@ -48,17 +48,17 @@ class Enemy {
   }
 
   update() {
-    // Zuerst die Y-Position aktualisieren
+    // update y-pos
     this.pos.add(this.vel);
     if (this.pos.y > height - 300) {
       this.pos.add(this.vel.copy().mult(3));
     }
 
-    // 1. Finde die linke und rechte Kante der Straße auf der aktuellen Y-Höhe
+    // 1. get left and right road edge
     const roadLeftX = map(this.pos.y, 150, height, width / 2 - 50, 50);
     const roadRightX = map(this.pos.y, 150, height, width / 2 + 50, width - 50);
 
-    // 2. Berechne die aktuelle Breite der Straße und einer einzelnen Spur
+    // 2. get width of lane
     const currentRoadWidth = roadRightX - roadLeftX;
     const currentLaneWidth = currentRoadWidth / numLanes;
 

@@ -1,16 +1,15 @@
 class Attack {
-    constructor(x, y, laneIndex) { // Füge laneIndex zum Konstruktor hinzu
-        this.laneIndex = laneIndex; // Speichere den Spur-Index
+    constructor(x, y, laneIndex) { 
+        this.laneIndex = laneIndex; 
         
-        // Anfangsposition
+        // starting position
         this.pos = createVector(x, y);
         
-        // Geschwindigkeit in Y-Richtung (nach oben)
-        this.vel = createVector(0, -10); // Angriffsgeschwindigkeit etwas höher als Feinde
+        // velocity
+        this.vel = createVector(0, -10); 
         
-        // Anfangsgröße des Angriffs
-        this.size = 10; // Basisgröße des Ellipsen-Durchmessers
-        this.initialY = y; // Speichere die initiale Y-Position für die Größenberechnung
+        this.size = 10; 
+        this.initialY = y; 
     }
 
     update() {

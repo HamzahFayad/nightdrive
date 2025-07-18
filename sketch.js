@@ -268,7 +268,7 @@ function draw() {
   let playerY = height - 160;
   smoothPlayerX = lerp(smoothPlayerX, targetX, 0.1); //smooth lane switch
   if (boostActive) {
-    image(playerBoost, smoothPlayerX, playerY - 25, 225, 225);
+    image(playerBoost, smoothPlayerX - 20, playerY - 25, 225, 225);
   } else {
     image(player, smoothPlayerX, playerY, 200, 200);
   }
@@ -308,7 +308,8 @@ function draw() {
     boostActive = true;
     //increase highscore
     increase_highscore = 0.2;
-    //Play Boost Sound
+    //Hide enemies
+    enemies = [];
     enemiesVelSnapshot = [...enemyVelocity];
     for (let v = 0; v < enemyVelocity.length; v++) {
       enemyVelocity[v] = enemyVelocity[v] + 40;
@@ -320,6 +321,11 @@ function draw() {
       increase_highscore = 0.1;
       for (let v = 0; v < enemyVelocity.length; v++) {
         enemyVelocity[v] = enemiesVelSnapshot[v];
+      } //Respawn enemies
+      for (let i = 0; i < numLanes; i++) {
+        if (enemies.length < MAX_CONCURRENT_ENEMIES) {
+          enemies.push(new Enemy(i, random(enemyVelocity)));
+        }
       }
       sendDataToActuator("W");
     }, 10000);
@@ -469,23 +475,27 @@ function mousePressed() {
 //START GAME
 function handleJoystickStart() {
   if (arduinoData.btnStick === 0 && !introHidden) {
+    document.getElementById("notes").style.display = "none";
     if (connectControllerButton) connectControllerButton.remove();
     if (connectActuatorButton) connectActuatorButton.remove();
     introHidden = true;
     //GAME MUSIC
-    gameMusic.loop();
-    //if (introSound && introSound.isLoaded()) introSound.stop();
+    if (!gameMusic.isPlaying()) {
+      gameMusic.loop();
+    } //if (introSound && introSound.isLoaded()) introSound.stop();
   }
 }
 
 function keyPressed() {
   //Testing Ventilator
-  if (key === "s") {
+  if (key === "q") {
     sendDataToActuator("Q");
-  } else if (key === "a") {
+  } else if (key === "w") {
     sendDataToActuator("W");
   }
-  if (keyCode === ENTER && !introHidden) {
+  if (!introHidden) {
+    document.getElementById("notes").style.display = "none";
+    //(keyCode === ENTER && !introHidden) {
     // remove connect btns
     if (connectControllerButton) connectControllerButton.remove();
     if (connectActuatorButton) connectActuatorButton.remove();
@@ -493,10 +503,12 @@ function keyPressed() {
     //isPlayin = true;
     //if (introSound && introSound.isLoaded()) introSound.stop();
     //GAME MUSIC
-    //gameMusic.loop();
+    if (!gameMusic.isPlaying()) {
+      gameMusic.loop();
+    }
   }
   //Testing Attack
-  if ((key === "b" || key === "B") && !boostActive) {
+  if ((key === "z" || key === "Z") && !boostActive) {
     let newAttack = new Attack(
       smoothPlayerX + player.width / 2,
       height - 100,
@@ -510,7 +522,7 @@ function keyPressed() {
     }
   }
   //Testing Boost
-  if ((key === "ü" || key === "Ü") && isBoostReady && !boostActive) {
+  if (keyCode === 32 && isBoostReady && !boostActive) {
     isBoostReady = false;
     boostActive = true;
     //increase highscore
@@ -519,16 +531,32 @@ function keyPressed() {
     enemiesVelSnapshot = [...enemyVelocity];
     for (let v = 0; v < enemyVelocity.length; v++) {
       enemyVelocity[v] = enemyVelocity[v] + 40;
-    }
+    } //Hide enemies
+    enemies = [];
     sendDataToActuator("Q"); //start ventilator
     setTimeout(() => {
       boostActive = false;
       increase_highscore = 0.1;
       for (let v = 0; v < enemyVelocity.length; v++) {
         enemyVelocity[v] = enemiesVelSnapshot[v];
+      } //Respawn enemies
+      for (let i = 0; i < numLanes; i++) {
+        if (enemies.length < MAX_CONCURRENT_ENEMIES) {
+          enemies.push(new Enemy(i, random(enemyVelocity)));
+        }
       }
       sendDataToActuator("W"); //stop ventilator
     }, 10000); //BOOST for 10 seconds
+  }
+  //Testing Lane Switch
+  if (keyCode === LEFT_ARROW) {
+    if (arduinoData.currentLane > 0) {
+      arduinoData.currentLane--;
+    }
+  } else if (keyCode === RIGHT_ARROW) {
+    if (arduinoData.currentLane < lanePositionsX.length - 1) {
+      arduinoData.currentLane++;
+    }
   }
 }
 
@@ -538,10 +566,10 @@ function windowResized() {
 }
 
 // =================================================================
-// ARDUINO FUNKTIONEN
+// ARDUINO FUNCTIONS
 // =================================================================
 
-// Senden von Daten
+// Send Data
 function handleArduinoCommunication() {
   // Sende Spur-Daten, wenn sie sich ändern
   if (portActuator && arduinoData.currentLane !== lastSentLane) {
