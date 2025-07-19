@@ -3,7 +3,7 @@ let enemyTypes = ["pflanze", "stein", "biker", "drone", "alien"];
 class Enemy {
   constructor(laneIndex, enemyVel, typeLane="normal") {
     this.laneIndex = laneIndex;
-    let y = 100;
+    let y = 150;
     let x = 0;
 
     this.pos = createVector(x, y);

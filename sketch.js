@@ -79,11 +79,13 @@ let fireAttack;
 let boostActive = false;
 let isBoostReady = false;
 const ATTACKS_FOR_BOOST = 3;
+let boostGif;
 
 //DECORATION / BACKGORUND ELEMENTS
 //Skyline
 let skyline;
 let skylineFull;
+let skylineBoost;
 //Trees
 let treeImg;
 let trees = [];
@@ -106,6 +108,8 @@ let carCrashSound;
 let laserGunSound;
 let gameOver;
 
+let manual;
+
 //PRELOAD SOUND & IMAGES
 function preload() {
   //font
@@ -121,12 +125,15 @@ function preload() {
   gameIntroSk = loadImage("assets/gameIntro.gif");
   skyline = loadImage("assets/skyline.png");
   skylineFull = loadImage("assets/skyline-full.png");
+  skylineBoost = loadImage("assets/skyline2.gif");
   tokyo = loadImage("assets/tokyo.png");
   player = loadImage("assets/elements/player.png");
   playerBoost = loadImage("assets/elements/player-boost.gif");
   fireAttack = loadImage("assets/elements/fireball.gif");
+  boostGif = loadImage("assets/elements/boosting.gif");
   heart = loadImage("assets/elements/heart.png");
   treeImg = loadImage("assets/elements/blossom-tree.png");
+  manual = loadImage("assets/manual.png");
   for (let i = 0; i < enemiesImgPaths.length; i++) {
     enemiesImgs[i] = loadImage(enemiesImgPaths[i]);
   }
@@ -221,7 +228,11 @@ function draw() {
   push();
   scale(1, -1);
   tint(255, 80);
-  image(skylineFull, 0, -767);
+  if (boostActive) {
+    image(skylineBoost, 0, -767);
+  } else {
+    image(skylineFull, 0, -767);
+  }
   pop();
 
   //STREET LANES
@@ -309,7 +320,7 @@ function draw() {
     //increase highscore
     increase_highscore = 0.2;
     //Hide enemies
-    enemies = [];
+    //enemies = [];
     enemiesVelSnapshot = [...enemyVelocity];
     for (let v = 0; v < enemyVelocity.length; v++) {
       enemyVelocity[v] = enemyVelocity[v] + 40;
@@ -322,6 +333,7 @@ function draw() {
       for (let v = 0; v < enemyVelocity.length; v++) {
         enemyVelocity[v] = enemiesVelSnapshot[v];
       } //Respawn enemies
+      enemies = [];
       for (let i = 0; i < numLanes; i++) {
         if (enemies.length < MAX_CONCURRENT_ENEMIES) {
           enemies.push(new Enemy(i, random(enemyVelocity)));
@@ -356,13 +368,16 @@ function draw() {
   push();
   imageMode(CENTER);
   image(fireAttack, width - 130, 42, 40, 40);
+  //image(manual, width - 100, height - 100, 150, 150);
   pop();
   text(numAttacks, width - 100, 40);
 
   if (numAttacks > 0 && isBoostReady) {
     push();
     fill("yellow");
-    text("BOOST", width - 200, 40);
+    imageMode(CENTER);
+    image(boostGif, width - 200, 40, 100, 100);
+    //text("BOOST", width - 200, 40);
     pop();
   }
   //END: HIGHSCORE NUMBER + 3 LIFES DISPLAY
@@ -484,6 +499,10 @@ function handleJoystickStart() {
       gameMusic.loop();
     } //if (introSound && introSound.isLoaded()) introSound.stop();
   }
+  if (arduinoData.btnStick === 0 && introHidden && lifesNum === 0) {
+    //reload
+    window.location.reload();
+  }
 }
 
 function keyPressed() {
@@ -532,14 +551,16 @@ function keyPressed() {
     for (let v = 0; v < enemyVelocity.length; v++) {
       enemyVelocity[v] = enemyVelocity[v] + 40;
     } //Hide enemies
-    enemies = [];
+    //enemies = [];
     sendDataToActuator("Q"); //start ventilator
     setTimeout(() => {
+      background(lerpColor(color(0), color(50, 200, 255), 0.2));
       boostActive = false;
       increase_highscore = 0.1;
       for (let v = 0; v < enemyVelocity.length; v++) {
         enemyVelocity[v] = enemiesVelSnapshot[v];
       } //Respawn enemies
+      enemies = [];
       for (let i = 0; i < numLanes; i++) {
         if (enemies.length < MAX_CONCURRENT_ENEMIES) {
           enemies.push(new Enemy(i, random(enemyVelocity)));
