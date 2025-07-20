@@ -78,7 +78,7 @@ let fireAttack;
 //BOOST
 let boostActive = false;
 let isBoostReady = false;
-const ATTACKS_FOR_BOOST = 3;
+const ATTACKS_FOR_BOOST = 20;
 let boostGif;
 
 //DECORATION / BACKGORUND ELEMENTS
@@ -434,6 +434,10 @@ function checkCollision(enemy) {
       text("GAME OVER", width / 2, height / 2 - 100);
       text("Score: " + Math.round(highscore), width / 2, height / 2);
       text("Total Hits: " + numAttacks, width / 2, height / 2 + 100);
+      pop();
+      push();
+      noStroke();
+      text("Restart", width / 2, height / 2 + 200);
       pop();
       noLoop();
     }
