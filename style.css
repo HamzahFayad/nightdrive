@@ -3,6 +3,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: "Courier New", Courier, monospace;
+  box-sizing: border-box;
 }
 
 canvas {
@@ -32,9 +33,15 @@ canvas {
   position: absolute;
   right: 0;
   bottom: 0;
-  max-width: 20%;
+  width: 20%;
   padding: 1rem;
   color: #fff;
+  background-color: rgba(22, 3, 33, .8);
+}
+@media screen and (max-width: 768px) {
+  #notes{
+    width: 85%;
+  }  
 }
 #notes ul{
   list-style: none;

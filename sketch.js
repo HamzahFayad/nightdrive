@@ -172,11 +172,11 @@ function setup() {
 
   //CONNECT ARDUINO WITH P5 SKETCH
   connectControllerButton = createButton("Connect Controller");
-  connectControllerButton.position(10, height - 50);
+  connectControllerButton.position(width - 150, 30);
   connectControllerButton.mousePressed(() => connectToPort("controller"));
 
   connectActuatorButton = createButton("Connect Actuators");
-  connectActuatorButton.position(10, height - 100);
+  connectActuatorButton.position(width - 150, 80);
   connectActuatorButton.mousePressed(() => connectToPort("actuator"));
 }
 
