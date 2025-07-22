@@ -493,7 +493,7 @@ function mousePressed() {
 
 //START GAME
 function handleJoystickStart() {
-  if (arduinoData.btnStick === 0 && !introHidden) {
+  if (arduinoData.btnShoot == 0 && lastBtnShootState == 1 && !introHidden) {
     document.getElementById("notes").style.display = "none";
     if (connectControllerButton) connectControllerButton.remove();
     if (connectActuatorButton) connectActuatorButton.remove();
@@ -503,10 +503,41 @@ function handleJoystickStart() {
       gameMusic.loop();
     } //if (introSound && introSound.isLoaded()) introSound.stop();
   }
-  if (arduinoData.btnStick === 0 && introHidden && lifesNum === 0) {
+  if (
+    arduinoData.btnShoot == 0 &&
+    lastBtnShootState == 1 &&
+    introHidden &&
+    lifesNum === 0
+  ) {
     //reload
-    window.location.reload();
+    //window.location.reload();
+    resetGame();
+    if (gameMusic.isPlaying()) {
+      gameMusic.stop();
+      gameMusic.loop();
+    }
   }
+}
+
+//RESTART GAME
+function resetGame() {
+  gameStarted = false;
+  countdownStarted = false;
+  gameStartTime = millis();
+  lifesNum = 3;
+  highscore = 0;
+  numAttacks = 0;
+  isBoostReady = false;
+  boostActive = false;
+  enemies = [];
+  attacks = [];
+
+  for (let i = 0; i < numLanes; i++) {
+    if (enemies.length < MAX_CONCURRENT_ENEMIES) {
+      enemies.push(new Enemy(i, random(enemyVelocity)));
+    }
+  }
+  loop();
 }
 
 function keyPressed() {
@@ -530,6 +561,16 @@ function keyPressed() {
       gameMusic.loop();
     }
   }
+  //reload
+  if (lifesNum === 0) {
+    //window.location.reload();
+    resetGame();
+    if (gameMusic.isPlaying()) {
+      gameMusic.stop();
+      gameMusic.loop();
+    }
+    return;
+  }
   //Testing Attack
   if ((key === "z" || key === "Z") && !boostActive) {
     let newAttack = new Attack(
@@ -539,10 +580,6 @@ function keyPressed() {
     );
     attacks.push(newAttack);
     laserGunSound.play();
-    //reload
-    if (lifesNum === 0) {
-      window.location.reload();
-    }
   }
   //Testing Boost
   if (keyCode === 32 && isBoostReady && !boostActive) {
