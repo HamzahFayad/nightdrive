@@ -3,7 +3,6 @@ let connectControllerButton, connectActuatorButton;
 
 let arduinoData = {
   currentLane: 0,
-  btnStick: 1,
   btnShoot: 1,
   btnBoost: 1,
   xValue: 512,
@@ -100,7 +99,7 @@ let velocityStarted = false;
 let highscore = 0;
 let increase_highscore = 0.1;
 //Lifes
-let lifesNum = 3;
+let lifesNum = 5;
 
 //Sounds + Music
 let gameMusic;
@@ -157,11 +156,11 @@ function setup() {
 
   //INCREASE GAME VELOCITY
   //setInterval(increaseVel, game_velocity_timer);
-
+  let firstLanes = [1, 2];
   //INITIALIZE ENEMIES
   for (let i = 0; i < numLanes; i++) {
     if (enemies.length < MAX_CONCURRENT_ENEMIES) {
-      enemies.push(new Enemy(i, random(enemyVelocity)));
+      enemies.push(new Enemy(firstLanes[i], random(enemyVelocity)));
     }
   }
 
@@ -334,11 +333,7 @@ function draw() {
         enemyVelocity[v] = enemiesVelSnapshot[v];
       } //Respawn enemies
       enemies = [];
-      for (let i = 0; i < numLanes; i++) {
-        if (enemies.length < MAX_CONCURRENT_ENEMIES) {
-          enemies.push(new Enemy(i, random(enemyVelocity)));
-        }
-      }
+      setTimeout(respawnEnemies, 1000);
       sendDataToActuator("W");
     }, 10000);
   }
@@ -400,6 +395,15 @@ function draw() {
 function increaseVel() {
   for (let v = 0; v < enemyVelocity.length; v++) {
     enemyVelocity[v] = min(enemyVelocity[v] + 0.2, 10);
+  }
+}
+
+//RESPAWN ENEMIES
+function respawnEnemies() {
+  for (let i = 0; i < numLanes; i++) {
+    if (enemies.length < MAX_CONCURRENT_ENEMIES) {
+      enemies.push(new Enemy(i, random(enemyVelocity)));
+    }
   }
 }
 
@@ -524,7 +528,7 @@ function resetGame() {
   gameStarted = false;
   countdownStarted = false;
   gameStartTime = millis();
-  lifesNum = 3;
+  lifesNum = 5;
   highscore = 0;
   numAttacks = 0;
   isBoostReady = false;
@@ -602,11 +606,7 @@ function keyPressed() {
         enemyVelocity[v] = enemiesVelSnapshot[v];
       } //Respawn enemies
       enemies = [];
-      for (let i = 0; i < numLanes; i++) {
-        if (enemies.length < MAX_CONCURRENT_ENEMIES) {
-          enemies.push(new Enemy(i, random(enemyVelocity)));
-        }
-      }
+      setTimeout(respawnEnemies, 1000);
       sendDataToActuator("W"); //stop ventilator
     }, 10000); //BOOST for 10 seconds
   }
@@ -644,14 +644,13 @@ function handleArduinoCommunication() {
 //Source: Gemini AI + Arduino
 function processData(dataString) {
   latestDataString = "Empfangen: " + dataString;
-  let values = dataString.split(","); // "currentLane,btnStick,btnShoot,btnBoost"
+  let values = dataString.split(","); // "currentLane,btnShoot,btnBoost"
 
-  if (values.length === 4) {
+  if (values.length === 3) {
     // VALUES coming from arduino
     arduinoData.currentLane = Number(values[0]);
-    arduinoData.btnStick = Number(values[1]);
-    arduinoData.btnShoot = Number(values[2]);
-    arduinoData.btnBoost = Number(values[3]);
+    arduinoData.btnShoot = Number(values[1]);
+    arduinoData.btnBoost = Number(values[2]);
   }
   //START GAME
   handleJoystickStart();

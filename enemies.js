@@ -29,15 +29,15 @@ class Enemy {
     this.attacked = false;
 
     if(typeLane=="switcher") {
-      if(laneIndex == 2 && this.pos.y < 200) {
-        setTimeout(() => this.laneIndex-=1, 1000);
+      if(laneIndex == 2 && this.pos.y < 250) {
+        setTimeout(() => this.laneIndex-=1, 500);
       }
-      else if(laneIndex == 1 && this.pos.y < 200) {
+      else if(laneIndex == 1 && this.pos.y < 250) {
         let dir = random([ -1, +1 ]);
-        setTimeout(() => this.laneIndex+=dir, 1000);
+        setTimeout(() => this.laneIndex+=dir, 500);
       }
-      else if(laneIndex == 0 && this.pos.y < 200){
-        setTimeout(() => this.laneIndex+=1, 1000);
+      else if(laneIndex == 0 && this.pos.y < 250){
+        setTimeout(() => this.laneIndex+=1, 500);
       }
     }
   }
